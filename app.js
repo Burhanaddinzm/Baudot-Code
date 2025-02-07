@@ -116,11 +116,16 @@ function to5Bit(num) {
   return num & 0b11111;
 }
 
-// Pack an array of 5-bit codes into an array of 16-bit numbers.
+// Pack an array of 5-bit codes into a Uint16Array of 16-bit words.
 const packCodes16 = (codes) => {
-  const result = [];
+  // Calculate the total number of bits and the required number of 16-bit words.
+  const totalBits = codes.length * 5;
+  const wordCount = Math.ceil(totalBits / 16);
+  const result = new Uint16Array(wordCount);
+
   let bitBuffer = 0;
   let bitCount = 0;
+  let wordIndex = 0;
 
   for (let code of codes) {
     // Append the 5-bit code (masking to 5 bits is okay here)
@@ -131,7 +136,7 @@ const packCodes16 = (codes) => {
     while (bitCount >= 16) {
       const shift = bitCount - 16;
       const word = bitBuffer >> shift;
-      result.push(word);
+      result[wordIndex++] = word;
       bitBuffer = bitBuffer & ((1 << shift) - 1);
       bitCount = shift;
     }
@@ -140,13 +145,13 @@ const packCodes16 = (codes) => {
   // If bits remain, pad to form the final 16-bit word.
   if (bitCount > 0) {
     const word = bitBuffer << (16 - bitCount);
-    result.push(word);
+    result[wordIndex++] = word;
   }
 
   return result;
 };
 
-// Unpack an array of 16-bit numbers back into an array of 5-bit codes.
+// Unpack an array of 16-bit numbers (Uint16Array) back into an array of 5-bit codes.
 // 'codeCount' is the number of codes originally packed.
 const unpackCodes16 = (packedArray, codeCount) => {
   const codes = [];
@@ -154,7 +159,7 @@ const unpackCodes16 = (packedArray, codeCount) => {
   let bitCount = 0;
 
   for (let word of packedArray) {
-    // Append the full 16-bit word (no masking here)
+    // Append the full 16-bit word
     bitBuffer = (bitBuffer << 16) | word;
     bitCount += 16;
 
@@ -208,10 +213,10 @@ const messageCodes = [
 
 console.log("Original Baudot codes:");
 messageCodes.forEach((code, index) => {
-  console.log(`Code ${index}:`, binaryToString(code, 5));
+  console.log(`Code ${index}:`, binaryToString(code));
 });
 
-// Pack the 5-bit codes into an array of 16-bit numbers.
+// Pack the 5-bit codes into a Uint16Array of 16-bit words.
 const packed16 = packCodes16(messageCodes);
 console.log("\nPacked 16-bit words:");
 packed16.forEach((word, index) => {
@@ -222,10 +227,10 @@ packed16.forEach((word, index) => {
 const unpacked = unpackCodes16(packed16, messageCodes.length);
 console.log("\nUnpacked Baudot codes:");
 unpacked.forEach((code, index) => {
-  console.log(`Code ${index}:`, binaryToString(code, 5));
+  console.log(`Code ${index}:`, binaryToString(code));
 });
 
 // Decode the Baudot message.
 const decodedMessage = decodeBaudot(unpacked);
 console.log("\nDecoded Message:", decodedMessage);
-console.log("\nMax value of 5bits:", binaryToString(31), to5Bit(31));
+console.log("\nMax value of 5 bits:", binaryToString(31), to5Bit(31));
